@@ -1,20 +1,23 @@
+# EduFila UI
 
-# React + Vite
+Projeto Front-end do sistema **EduFila**, desenvolvido para a disciplina de **Projeto Integrador II** do curso de Tecnologia em Sistemas para Internet.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Tecnologias
 
-Currently, two official plugins are available:
+- React
+- Vite
+- JavaScript (ES6+)
+- CSS3
+- Git
+- GitHub
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Objetivo
 
-## React Compiler
+Desenvolver a interface web do EduFila, sistema voltado ao gerenciamento digital de filas de atendimento acadêmico.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Execução do projeto
 
-## Expanding the ESLint configuration
+Instale as dependências:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
-# edufila-ui
-08a5de4111386cf0e6a2e2944ab48dc92b9b318e
+```bash
+npm install
