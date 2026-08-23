@@ -1,7 +1,7 @@
-import Cadastro from "./pages/Cadastro"
+import DashboardEstudante from "./pages/DashboardEstudante"
 
 function App() {
-  return <Cadastro />
+  return <DashboardEstudante />
 }
 
 export default App
