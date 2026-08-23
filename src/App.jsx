@@ -1,7 +1,7 @@
-import DashboardEstudante from "./pages/DashboardEstudante"
+import EscolhaSetor from "./pages/EscolhaSetor"
 
 function App() {
-  return <DashboardEstudante />
+  return <EscolhaSetor />
 }
 
 export default App
