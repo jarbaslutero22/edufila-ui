@@ -43,9 +43,23 @@ function VisualizacaoFila() {
     inicio: "10:24",
   })
 
+  const [historico, setHistorico] = useState([])
+
+  function atualizarStatus(novaFila) {
+    return novaFila.map((item, index) => ({
+      ...item,
+      status: index === 0 ? "Próximo" : "Aguardando",
+    }))
+  }
+
   function chamarProximo() {
     if (fila.length === 0) {
       alert("Não há estudantes aguardando atendimento.")
+      return
+    }
+
+    if (atendimentoAtual) {
+      alert("Finalize o atendimento atual antes de chamar o próximo.")
       return
     }
 
@@ -63,10 +77,125 @@ function VisualizacaoFila() {
     })
 
     setFila((filaAtual) =>
-      filaAtual.slice(1).map((item, index) => ({
-        ...item,
-        status: index === 0 ? "Próximo" : "Aguardando",
-      }))
+      atualizarStatus(filaAtual.slice(1))
+    )
+  }
+
+  function chamarSenha(senha) {
+    if (atendimentoAtual) {
+      alert("Finalize o atendimento atual antes de chamar outra senha.")
+      return
+    }
+
+    const estudanteChamado = fila.find(
+      (item) => item.senha === senha
+    )
+
+    if (!estudanteChamado) {
+      return
+    }
+
+    const agora = new Date().toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+
+    setAtendimentoAtual({
+      senha: estudanteChamado.senha,
+      estudante: estudanteChamado.estudante,
+      inicio: agora,
+    })
+
+    setFila((filaAtual) =>
+      atualizarStatus(
+        filaAtual.filter((item) => item.senha !== senha)
+      )
+    )
+  }
+
+  function adiarAtendimento(senha) {
+    setFila((filaAtual) => {
+      const atendimentoAdiado = filaAtual.find(
+        (item) => item.senha === senha
+      )
+
+      if (!atendimentoAdiado) {
+        return filaAtual
+      }
+
+      const restanteFila = filaAtual.filter(
+        (item) => item.senha !== senha
+      )
+
+      const novaFila = [
+        ...restanteFila,
+        {
+          ...atendimentoAdiado,
+          prioridade: false,
+          status: "Aguardando",
+        },
+      ]
+
+      return atualizarStatus(novaFila)
+    })
+  }
+
+  function priorizarAtendimento(senha) {
+    setFila((filaAtual) => {
+      const atendimentoPrioritario = filaAtual.find(
+        (item) => item.senha === senha
+      )
+
+      if (!atendimentoPrioritario) {
+        return filaAtual
+      }
+
+      const restanteFila = filaAtual.filter(
+        (item) => item.senha !== senha
+      )
+
+      const novaFila = [
+        {
+          ...atendimentoPrioritario,
+          prioridade: true,
+          status: "Próximo",
+        },
+        ...restanteFila,
+      ]
+
+      return atualizarStatus(novaFila)
+    })
+  }
+
+  function finalizarAtendimento() {
+    if (!atendimentoAtual) {
+      alert("Não há atendimento em andamento.")
+      return
+    }
+
+    const agora = new Date().toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+
+    const data = new Date().toLocaleDateString("pt-BR")
+
+    const atendimentoFinalizado = {
+      ...atendimentoAtual,
+      fim: agora,
+      data,
+      status: "Concluído",
+    }
+
+    setHistorico((historicoAtual) => [
+      atendimentoFinalizado,
+      ...historicoAtual,
+    ])
+
+    setAtendimentoAtual(null)
+
+    alert(
+      `Atendimento ${atendimentoFinalizado.senha} finalizado com sucesso.`
     )
   }
 
@@ -103,7 +232,9 @@ function VisualizacaoFila() {
 
         <div className="visualizacao-fila-heading">
           <div>
-            <p className="eyebrow-dashboard">GERENCIAMENTO</p>
+            <p className="eyebrow-dashboard">
+              GERENCIAMENTO
+            </p>
 
             <h1>Fila de atendimento</h1>
 
@@ -136,39 +267,76 @@ function VisualizacaoFila() {
           </article>
 
           <article>
-            <span>Tempo médio</span>
-            <strong>≈ 9 min</strong>
+            <span>Finalizados</span>
+            <strong>{historico.length}</strong>
           </article>
         </section>
 
         <section className="fila-atendimento-atual">
-          <div>
-            <p className="panel-overline">ATENDIMENTO ATUAL</p>
+          {atendimentoAtual ? (
+            <>
+              <div>
+                <p className="panel-overline">
+                  ATENDIMENTO ATUAL
+                </p>
 
-            <span>Senha</span>
+                <span>Senha</span>
+                <strong>{atendimentoAtual.senha}</strong>
+              </div>
 
-            <strong>{atendimentoAtual.senha}</strong>
-          </div>
+              <div>
+                <span>Estudante</span>
+                <strong>{atendimentoAtual.estudante}</strong>
+              </div>
 
-          <div>
-            <span>Estudante</span>
-            <strong>{atendimentoAtual.estudante}</strong>
-          </div>
+              <div>
+                <span>Início</span>
+                <strong>{atendimentoAtual.inicio}</strong>
+              </div>
 
-          <div>
-            <span>Início</span>
-            <strong>{atendimentoAtual.inicio}</strong>
-          </div>
+              <div>
+                <span className="status-concluido">
+                  Em atendimento
+                </span>
 
-          <span className="status-concluido">
-            Em atendimento
-          </span>
+                <button
+                  className="finalizar-button"
+                  type="button"
+                  onClick={finalizarAtendimento}
+                >
+                  Finalizar atendimento
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <p className="panel-overline">
+                  ATENDIMENTO ATUAL
+                </p>
+
+                <strong>Nenhum atendimento em andamento</strong>
+              </div>
+
+              <button
+                className="dashboard-primary-button"
+                type="button"
+                onClick={chamarProximo}
+                disabled={fila.length === 0}
+              >
+                Chamar próximo
+              </button>
+            </>
+          )}
         </section>
 
         <section className="fila-tabela-card">
           <div className="fila-tabela-header">
             <div>
-              <p className="panel-overline">FILA DO SETOR</p>
+              <p className="panel-overline">
+                FILA DO SETOR
+              </p>
+
               <h2>Senhas aguardando</h2>
             </div>
 
@@ -176,11 +344,15 @@ function VisualizacaoFila() {
               className="dashboard-primary-button"
               type="button"
               onClick={chamarProximo}
-              disabled={fila.length === 0}
+              disabled={
+                fila.length === 0 || atendimentoAtual !== null
+              }
             >
-              {fila.length > 0
-                ? "Chamar próximo"
-                : "Fila vazia"}
+              {fila.length === 0
+                ? "Fila vazia"
+                : atendimentoAtual
+                ? "Atendimento em andamento"
+                : "Chamar próximo"}
             </button>
           </div>
 
@@ -249,6 +421,10 @@ function VisualizacaoFila() {
                         <button
                           className="action-button primary"
                           type="button"
+                          onClick={() =>
+                            chamarSenha(item.senha)
+                          }
+                          disabled={atendimentoAtual !== null}
                         >
                           Chamar
                         </button>
@@ -256,13 +432,22 @@ function VisualizacaoFila() {
                         <button
                           className="action-button"
                           type="button"
+                          onClick={() =>
+                            priorizarAtendimento(item.senha)
+                          }
+                          disabled={item.prioridade}
                         >
-                          Priorizar
+                          {item.prioridade
+                            ? "Prioritário"
+                            : "Priorizar"}
                         </button>
 
                         <button
                           className="action-button"
                           type="button"
+                          onClick={() =>
+                            adiarAtendimento(item.senha)
+                          }
                         >
                           Adiar
                         </button>
@@ -289,13 +474,65 @@ function VisualizacaoFila() {
           </div>
         </section>
 
+        {historico.length > 0 && (
+          <section className="fila-tabela-card">
+            <div className="fila-tabela-header">
+              <div>
+                <p className="panel-overline">
+                  HISTÓRICO DA SESSÃO
+                </p>
+
+                <h2>Atendimentos finalizados</h2>
+              </div>
+            </div>
+
+            <div className="fila-table-wrapper">
+              <table className="fila-table">
+                <thead>
+                  <tr>
+                    <th>Senha</th>
+                    <th>Estudante</th>
+                    <th>Data</th>
+                    <th>Início</th>
+                    <th>Fim</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {historico.map((item) => (
+                    <tr key={`${item.senha}-${item.fim}`}>
+                      <td>
+                        <strong className="table-senha">
+                          {item.senha}
+                        </strong>
+                      </td>
+
+                      <td>{item.estudante}</td>
+                      <td>{item.data}</td>
+                      <td>{item.inicio}</td>
+                      <td>{item.fim}</td>
+
+                      <td>
+                        <span className="status-concluido">
+                          ✓ Concluído
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
         <div className="historico-info">
           <div className="notice-icon">i</div>
 
           <p>
-            A ordem da fila deve respeitar a ordem das
-            solicitações e os critérios de prioridade definidos
-            para o atendimento.
+            A ordem da fila deve respeitar a ordem das solicitações
+            e os critérios de prioridade definidos para o
+            atendimento.
           </p>
         </div>
       </section>
