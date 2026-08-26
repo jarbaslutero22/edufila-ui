@@ -1,7 +1,7 @@
-import EscolhaSetor from "./pages/EscolhaSetor"
+import SenhaGerada from "./pages/SenhaGerada"
 
 function App() {
-  return <EscolhaSetor />
+  return <SenhaGerada />
 }
 
 export default App
