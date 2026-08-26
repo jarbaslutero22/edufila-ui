@@ -1,7 +1,7 @@
-import PainelAdministrativo from "./pages/PainelAdministrativo"
+import GerenciamentoSetores from "./pages/GerenciamentoSetores"
 
 function App() {
-  return <PainelAdministrativo />
+  return <GerenciamentoSetores />
 }
 
 export default App

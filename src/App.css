@@ -2329,3 +2329,166 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+.management-container {
+  width: min(1150px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 42px 0 60px;
+}
+
+.management-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.management-heading h1 {
+  margin: 7px 0;
+  color: #172033;
+  font-size: 36px;
+  letter-spacing: -0.03em;
+}
+
+.management-heading p:last-child {
+  margin: 0;
+  color: #788396;
+}
+
+.management-count {
+  min-width: 140px;
+  padding: 17px 20px;
+  border: 1px solid #e2e7ef;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.management-count span {
+  color: #8994a5;
+  font-size: 12px;
+}
+
+.management-count strong {
+  display: block;
+  margin-top: 5px;
+  color: #1f5ed7;
+  font-size: 26px;
+}
+
+.management-form-card,
+.management-table-card {
+  margin-top: 22px;
+  padding: 26px;
+  border: 1px solid #e2e7ef;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 7px 20px rgba(20, 35, 60, 0.05);
+}
+
+.management-form-card h2,
+.management-table-card h2 {
+  margin: 5px 0 0;
+  color: #202c43;
+}
+
+.management-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.8fr auto;
+  align-items: end;
+  gap: 15px;
+  margin-top: 23px;
+}
+
+.management-form select {
+  width: 100%;
+  height: 52px;
+  padding: 0 14px;
+  border: 1px solid #d7deea;
+  border-radius: 12px;
+  background: #fbfcfe;
+  color: #344157;
+}
+
+.setores-form {
+  grid-template-columns: 1fr 1.5fr auto;
+}
+
+.management-table-heading {
+  display: flex;
+  justify-content: space-between;
+}
+
+.danger-action {
+  color: #a8424c;
+}
+
+.setores-management-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.management-sector-card {
+  padding: 21px;
+  border: 1px solid #e4e9f1;
+  border-radius: 15px;
+  background: #ffffff;
+}
+
+.management-sector-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.management-sector-card h3 {
+  margin: 18px 0 7px;
+  color: #29364d;
+}
+
+.management-sector-card p {
+  min-height: 42px;
+  margin: 0;
+  color: #818c9e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.management-sector-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .management-form,
+  .setores-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .setores-management-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .management-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .management-count {
+    width: fit-content;
+  }
+
+  .management-form,
+  .setores-form,
+  .setores-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .management-heading h1 {
+    font-size: 29px;
+  }
+}
