@@ -1,7 +1,7 @@
-import FiltroRelatorios from "./pages/FiltroRelatorios"
+import VisualizacaoDados from "./pages/VisualizacaoDados"
 
 function App() {
-  return <FiltroRelatorios />
+  return <VisualizacaoDados />
 }
 
 export default App
