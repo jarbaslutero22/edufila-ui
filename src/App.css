@@ -3149,3 +3149,123 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ========================================
+   MENSAGENS E FEEDBACKS DO SISTEMA
+======================================== */
+
+.mensagem {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 15px 17px;
+  margin: 16px 0;
+  border: 1px solid;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.mensagem-icone {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mensagem-conteudo {
+  flex: 1;
+}
+
+.mensagem-conteudo strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 13px;
+}
+
+.mensagem-conteudo p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.mensagem-fechar {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  opacity: 0.65;
+}
+
+.mensagem-fechar:hover {
+  opacity: 1;
+}
+
+/* ERRO */
+
+.mensagem-erro {
+  border-color: #f0c7cb;
+  color: #8e3540;
+  background: #fff4f5;
+}
+
+.mensagem-erro .mensagem-icone {
+  color: #ffffff;
+  background: #c94c59;
+}
+
+/* SUCESSO */
+
+.mensagem-sucesso {
+  border-color: #bde4cf;
+  color: #24704c;
+  background: #f0faf5;
+}
+
+.mensagem-sucesso .mensagem-icone {
+  color: #ffffff;
+  background: #22a06b;
+}
+
+/* AVISO */
+
+.mensagem-aviso {
+  border-color: #ead7a6;
+  color: #785b1c;
+  background: #fff9e9;
+}
+
+.mensagem-aviso .mensagem-icone {
+  color: #ffffff;
+  background: #c79327;
+}
+
+/* INFORMAÇÃO */
+
+.mensagem-info {
+  border-color: #c7d8f7;
+  color: #285ba7;
+  background: #f2f6ff;
+}
+
+.mensagem-info .mensagem-icone {
+  color: #ffffff;
+  background: #1f5ed7;
+}
+
+@media (max-width: 520px) {
+  .mensagem {
+    padding: 13px;
+  }
+
+  .mensagem-conteudo p {
+    font-size: 12px;
+  }
+}

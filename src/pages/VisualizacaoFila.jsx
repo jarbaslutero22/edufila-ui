@@ -1,4 +1,5 @@
 import { useState } from "react"
+import Mensagem from "../components/Mensagem"
 import "../App.css"
 
 function VisualizacaoFila() {
@@ -45,6 +46,16 @@ function VisualizacaoFila() {
 
   const [historico, setHistorico] = useState([])
 
+  const [mensagemSistema, setMensagemSistema] = useState(null)
+
+  function mostrarMensagem(tipo, titulo, mensagem) {
+    setMensagemSistema({
+      tipo,
+      titulo,
+      mensagem,
+    })
+  }
+
   function atualizarStatus(novaFila) {
     return novaFila.map((item, index) => ({
       ...item,
@@ -54,12 +65,20 @@ function VisualizacaoFila() {
 
   function chamarProximo() {
     if (fila.length === 0) {
-      alert("Não há estudantes aguardando atendimento.")
+      mostrarMensagem(
+        "info",
+        "Fila vazia",
+        "Não há estudantes aguardando atendimento."
+      )
       return
     }
 
     if (atendimentoAtual) {
-      alert("Finalize o atendimento atual antes de chamar o próximo.")
+      mostrarMensagem(
+        "aviso",
+        "Atendimento em andamento",
+        "Finalize o atendimento atual antes de chamar o próximo estudante."
+      )
       return
     }
 
@@ -79,11 +98,21 @@ function VisualizacaoFila() {
     setFila((filaAtual) =>
       atualizarStatus(filaAtual.slice(1))
     )
+
+    mostrarMensagem(
+      "sucesso",
+      "Senha chamada",
+      `A senha ${proximo.senha} foi chamada para atendimento.`
+    )
   }
 
   function chamarSenha(senha) {
     if (atendimentoAtual) {
-      alert("Finalize o atendimento atual antes de chamar outra senha.")
+      mostrarMensagem(
+        "aviso",
+        "Atendimento em andamento",
+        "Finalize o atendimento atual antes de chamar outra senha."
+      )
       return
     }
 
@@ -92,6 +121,11 @@ function VisualizacaoFila() {
     )
 
     if (!estudanteChamado) {
+      mostrarMensagem(
+        "erro",
+        "Senha não encontrada",
+        "Não foi possível localizar essa senha na fila."
+      )
       return
     }
 
@@ -111,18 +145,29 @@ function VisualizacaoFila() {
         filaAtual.filter((item) => item.senha !== senha)
       )
     )
+
+    mostrarMensagem(
+      "sucesso",
+      "Atendimento iniciado",
+      `A senha ${estudanteChamado.senha} foi chamada para atendimento.`
+    )
   }
 
   function adiarAtendimento(senha) {
-    setFila((filaAtual) => {
-      const atendimentoAdiado = filaAtual.find(
-        (item) => item.senha === senha
+    const atendimentoAdiado = fila.find(
+      (item) => item.senha === senha
+    )
+
+    if (!atendimentoAdiado) {
+      mostrarMensagem(
+        "erro",
+        "Não foi possível adiar",
+        "A senha selecionada não foi encontrada na fila."
       )
+      return
+    }
 
-      if (!atendimentoAdiado) {
-        return filaAtual
-      }
-
+    setFila((filaAtual) => {
       const restanteFila = filaAtual.filter(
         (item) => item.senha !== senha
       )
@@ -138,18 +183,38 @@ function VisualizacaoFila() {
 
       return atualizarStatus(novaFila)
     })
+
+    mostrarMensagem(
+      "info",
+      "Atendimento adiado",
+      `A senha ${senha} foi movida para o final da fila.`
+    )
   }
 
   function priorizarAtendimento(senha) {
-    setFila((filaAtual) => {
-      const atendimentoPrioritario = filaAtual.find(
-        (item) => item.senha === senha
+    const atendimentoPrioritario = fila.find(
+      (item) => item.senha === senha
+    )
+
+    if (!atendimentoPrioritario) {
+      mostrarMensagem(
+        "erro",
+        "Não foi possível priorizar",
+        "A senha selecionada não foi encontrada na fila."
       )
+      return
+    }
 
-      if (!atendimentoPrioritario) {
-        return filaAtual
-      }
+    if (atendimentoPrioritario.prioridade) {
+      mostrarMensagem(
+        "info",
+        "Atendimento prioritário",
+        `A senha ${senha} já está marcada como prioritária.`
+      )
+      return
+    }
 
+    setFila((filaAtual) => {
       const restanteFila = filaAtual.filter(
         (item) => item.senha !== senha
       )
@@ -165,11 +230,21 @@ function VisualizacaoFila() {
 
       return atualizarStatus(novaFila)
     })
+
+    mostrarMensagem(
+      "sucesso",
+      "Prioridade aplicada",
+      `A senha ${senha} foi priorizada e movida para o início da fila.`
+    )
   }
 
   function finalizarAtendimento() {
     if (!atendimentoAtual) {
-      alert("Não há atendimento em andamento.")
+      mostrarMensagem(
+        "erro",
+        "Nenhum atendimento",
+        "Não há atendimento em andamento para finalizar."
+      )
       return
     }
 
@@ -194,8 +269,10 @@ function VisualizacaoFila() {
 
     setAtendimentoAtual(null)
 
-    alert(
-      `Atendimento ${atendimentoFinalizado.senha} finalizado com sucesso.`
+    mostrarMensagem(
+      "sucesso",
+      "Atendimento finalizado",
+      `A senha ${atendimentoFinalizado.senha} foi finalizada com sucesso.`
     )
   }
 
@@ -207,7 +284,9 @@ function VisualizacaoFila() {
     <main className="dashboard-page">
       <header className="dashboard-header">
         <div className="dashboard-brand">
-          <div className="brand-badge-small">EF</div>
+          <div className="brand-badge-small">
+            EF
+          </div>
 
           <div>
             <strong>EduFila</strong>
@@ -221,12 +300,17 @@ function VisualizacaoFila() {
             <span>Secretaria Acadêmica</span>
           </div>
 
-          <div className="user-avatar">S</div>
+          <div className="user-avatar">
+            S
+          </div>
         </div>
       </header>
 
       <section className="visualizacao-fila-container">
-        <button className="back-button" type="button">
+        <button
+          className="back-button"
+          type="button"
+        >
           ← Voltar ao painel
         </button>
 
@@ -239,8 +323,8 @@ function VisualizacaoFila() {
             <h1>Fila de atendimento</h1>
 
             <p>
-              Visualize a ordem das senhas e acompanhe a situação
-              atual do atendimento do setor.
+              Visualize a ordem das senhas e acompanhe
+              a situação atual do atendimento do setor.
             </p>
           </div>
 
@@ -250,6 +334,15 @@ function VisualizacaoFila() {
           </div>
         </div>
 
+        {mensagemSistema && (
+          <Mensagem
+            tipo={mensagemSistema.tipo}
+            titulo={mensagemSistema.titulo}
+            mensagem={mensagemSistema.mensagem}
+            onClose={() => setMensagemSistema(null)}
+          />
+        )}
+
         <section className="fila-resumo-servidor">
           <article>
             <span>Aguardando</span>
@@ -258,7 +351,9 @@ function VisualizacaoFila() {
 
           <article>
             <span>Em atendimento</span>
-            <strong>{atendimentoAtual ? 1 : 0}</strong>
+            <strong>
+              {atendimentoAtual ? 1 : 0}
+            </strong>
           </article>
 
           <article>
@@ -281,17 +376,26 @@ function VisualizacaoFila() {
                 </p>
 
                 <span>Senha</span>
-                <strong>{atendimentoAtual.senha}</strong>
+
+                <strong>
+                  {atendimentoAtual.senha}
+                </strong>
               </div>
 
               <div>
                 <span>Estudante</span>
-                <strong>{atendimentoAtual.estudante}</strong>
+
+                <strong>
+                  {atendimentoAtual.estudante}
+                </strong>
               </div>
 
               <div>
                 <span>Início</span>
-                <strong>{atendimentoAtual.inicio}</strong>
+
+                <strong>
+                  {atendimentoAtual.inicio}
+                </strong>
               </div>
 
               <div>
@@ -315,7 +419,9 @@ function VisualizacaoFila() {
                   ATENDIMENTO ATUAL
                 </p>
 
-                <strong>Nenhum atendimento em andamento</strong>
+                <strong>
+                  Nenhum atendimento em andamento
+                </strong>
               </div>
 
               <button
@@ -345,14 +451,15 @@ function VisualizacaoFila() {
               type="button"
               onClick={chamarProximo}
               disabled={
-                fila.length === 0 || atendimentoAtual !== null
+                fila.length === 0 ||
+                atendimentoAtual !== null
               }
             >
               {fila.length === 0
                 ? "Fila vazia"
                 : atendimentoAtual
-                ? "Atendimento em andamento"
-                : "Chamar próximo"}
+                  ? "Atendimento em andamento"
+                  : "Chamar próximo"}
             </button>
           </div>
 
@@ -386,11 +493,17 @@ function VisualizacaoFila() {
                       </strong>
                     </td>
 
-                    <td>{item.estudante}</td>
+                    <td>
+                      {item.estudante}
+                    </td>
 
-                    <td>{item.horario}</td>
+                    <td>
+                      {item.horario}
+                    </td>
 
-                    <td>{item.espera}</td>
+                    <td>
+                      {item.espera}
+                    </td>
 
                     <td>
                       {item.prioridade ? (
@@ -424,7 +537,9 @@ function VisualizacaoFila() {
                           onClick={() =>
                             chamarSenha(item.senha)
                           }
-                          disabled={atendimentoAtual !== null}
+                          disabled={
+                            atendimentoAtual !== null
+                          }
                         >
                           Chamar
                         </button>
@@ -433,7 +548,9 @@ function VisualizacaoFila() {
                           className="action-button"
                           type="button"
                           onClick={() =>
-                            priorizarAtendimento(item.senha)
+                            priorizarAtendimento(
+                              item.senha
+                            )
                           }
                           disabled={item.prioridade}
                         >
@@ -446,7 +563,9 @@ function VisualizacaoFila() {
                           className="action-button"
                           type="button"
                           onClick={() =>
-                            adiarAtendimento(item.senha)
+                            adiarAtendimento(
+                              item.senha
+                            )
                           }
                         >
                           Adiar
@@ -465,7 +584,8 @@ function VisualizacaoFila() {
                         padding: "32px",
                       }}
                     >
-                      Não há estudantes aguardando atendimento.
+                      Não há estudantes aguardando
+                      atendimento.
                     </td>
                   </tr>
                 )}
@@ -482,7 +602,9 @@ function VisualizacaoFila() {
                   HISTÓRICO DA SESSÃO
                 </p>
 
-                <h2>Atendimentos finalizados</h2>
+                <h2>
+                  Atendimentos finalizados
+                </h2>
               </div>
             </div>
 
@@ -501,7 +623,9 @@ function VisualizacaoFila() {
 
                 <tbody>
                   {historico.map((item) => (
-                    <tr key={`${item.senha}-${item.fim}`}>
+                    <tr
+                      key={`${item.senha}-${item.fim}`}
+                    >
                       <td>
                         <strong className="table-senha">
                           {item.senha}
@@ -527,12 +651,14 @@ function VisualizacaoFila() {
         )}
 
         <div className="historico-info">
-          <div className="notice-icon">i</div>
+          <div className="notice-icon">
+            i
+          </div>
 
           <p>
-            A ordem da fila deve respeitar a ordem das solicitações
-            e os critérios de prioridade definidos para o
-            atendimento.
+            A ordem da fila deve respeitar a ordem das
+            solicitações e os critérios de prioridade
+            definidos para o atendimento.
           </p>
         </div>
       </section>
