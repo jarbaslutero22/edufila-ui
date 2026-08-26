@@ -1,7 +1,7 @@
-import HistoricoAtendimentos from "./pages/HistoricoAtendimentos"
+import AcompanhamentoFila from "./pages/AcompanhamentoFila"
 
 function App() {
-  return <HistoricoAtendimentos />
+  return <AcompanhamentoFila />
 }
 
 export default App
