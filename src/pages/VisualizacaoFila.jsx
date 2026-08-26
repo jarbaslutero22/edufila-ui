@@ -1,9 +1,9 @@
+import { useState } from "react"
 import "../App.css"
 
 function VisualizacaoFila() {
-  const fila = [
+  const [fila, setFila] = useState([
     {
-      posicao: 1,
       senha: "A021",
       estudante: "Ana Carolina",
       horario: "10:32",
@@ -12,7 +12,6 @@ function VisualizacaoFila() {
       status: "Próximo",
     },
     {
-      posicao: 2,
       senha: "A022",
       estudante: "Rafael Silva",
       horario: "10:36",
@@ -21,7 +20,6 @@ function VisualizacaoFila() {
       status: "Aguardando",
     },
     {
-      posicao: 3,
       senha: "A023",
       estudante: "Marcos Pereira",
       horario: "10:40",
@@ -30,7 +28,6 @@ function VisualizacaoFila() {
       status: "Aguardando",
     },
     {
-      posicao: 4,
       senha: "A024",
       estudante: "Juliana Costa",
       horario: "10:43",
@@ -38,7 +35,44 @@ function VisualizacaoFila() {
       prioridade: false,
       status: "Aguardando",
     },
-  ]
+  ])
+
+  const [atendimentoAtual, setAtendimentoAtual] = useState({
+    senha: "A020",
+    estudante: "João Ferreira",
+    inicio: "10:24",
+  })
+
+  function chamarProximo() {
+    if (fila.length === 0) {
+      alert("Não há estudantes aguardando atendimento.")
+      return
+    }
+
+    const proximo = fila[0]
+
+    const agora = new Date().toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+
+    setAtendimentoAtual({
+      senha: proximo.senha,
+      estudante: proximo.estudante,
+      inicio: agora,
+    })
+
+    setFila((filaAtual) =>
+      filaAtual.slice(1).map((item, index) => ({
+        ...item,
+        status: index === 0 ? "Próximo" : "Aguardando",
+      }))
+    )
+  }
+
+  const totalPrioridades = fila.filter(
+    (item) => item.prioridade
+  ).length
 
   return (
     <main className="dashboard-page">
@@ -70,11 +104,12 @@ function VisualizacaoFila() {
         <div className="visualizacao-fila-heading">
           <div>
             <p className="eyebrow-dashboard">GERENCIAMENTO</p>
+
             <h1>Fila de atendimento</h1>
 
             <p>
-              Visualize a ordem das senhas e acompanhe a situação atual do
-              atendimento do setor.
+              Visualize a ordem das senhas e acompanhe a situação
+              atual do atendimento do setor.
             </p>
           </div>
 
@@ -87,17 +122,17 @@ function VisualizacaoFila() {
         <section className="fila-resumo-servidor">
           <article>
             <span>Aguardando</span>
-            <strong>4</strong>
+            <strong>{fila.length}</strong>
           </article>
 
           <article>
             <span>Em atendimento</span>
-            <strong>1</strong>
+            <strong>{atendimentoAtual ? 1 : 0}</strong>
           </article>
 
           <article>
             <span>Prioridades</span>
-            <strong>1</strong>
+            <strong>{totalPrioridades}</strong>
           </article>
 
           <article>
@@ -109,18 +144,20 @@ function VisualizacaoFila() {
         <section className="fila-atendimento-atual">
           <div>
             <p className="panel-overline">ATENDIMENTO ATUAL</p>
+
             <span>Senha</span>
-            <strong>A020</strong>
+
+            <strong>{atendimentoAtual.senha}</strong>
           </div>
 
           <div>
             <span>Estudante</span>
-            <strong>João Ferreira</strong>
+            <strong>{atendimentoAtual.estudante}</strong>
           </div>
 
           <div>
             <span>Início</span>
-            <strong>10:24</strong>
+            <strong>{atendimentoAtual.inicio}</strong>
           </div>
 
           <span className="status-concluido">
@@ -135,8 +172,15 @@ function VisualizacaoFila() {
               <h2>Senhas aguardando</h2>
             </div>
 
-            <button className="dashboard-primary-button" type="button">
-              Chamar próximo
+            <button
+              className="dashboard-primary-button"
+              type="button"
+              onClick={chamarProximo}
+              disabled={fila.length === 0}
+            >
+              {fila.length > 0
+                ? "Chamar próximo"
+                : "Fila vazia"}
             </button>
           </div>
 
@@ -156,11 +200,11 @@ function VisualizacaoFila() {
               </thead>
 
               <tbody>
-                {fila.map((item) => (
+                {fila.map((item, index) => (
                   <tr key={item.senha}>
                     <td>
                       <span className="position-number">
-                        {item.posicao}º
+                        {index + 1}º
                       </span>
                     </td>
 
@@ -226,6 +270,20 @@ function VisualizacaoFila() {
                     </td>
                   </tr>
                 ))}
+
+                {fila.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan="8"
+                      style={{
+                        textAlign: "center",
+                        padding: "32px",
+                      }}
+                    >
+                      Não há estudantes aguardando atendimento.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -235,8 +293,9 @@ function VisualizacaoFila() {
           <div className="notice-icon">i</div>
 
           <p>
-            A ordem da fila deve respeitar a ordem das solicitações e os
-            critérios de prioridade definidos para o atendimento.
+            A ordem da fila deve respeitar a ordem das
+            solicitações e os critérios de prioridade definidos
+            para o atendimento.
           </p>
         </div>
       </section>
