@@ -1,7 +1,7 @@
-import VisualizacaoFila from "./pages/VisualizacaoFila"
+import PainelAdministrativo from "./pages/PainelAdministrativo"
 
 function App() {
-  return <VisualizacaoFila />
+  return <PainelAdministrativo />
 }
 
 export default App
