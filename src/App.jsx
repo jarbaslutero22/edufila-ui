@@ -1,7 +1,7 @@
-import GerenciamentoSetores from "./pages/GerenciamentoSetores"
+import Relatorios from "./pages/Relatorios"
 
 function App() {
-  return <GerenciamentoSetores />
+  return <Relatorios />
 }
 
 export default App
