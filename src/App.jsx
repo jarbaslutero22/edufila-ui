@@ -1,7 +1,7 @@
-import SenhaGerada from "./pages/SenhaGerada"
+import GeracaoSenha from "./pages/GeracaoSenha"
 
 function App() {
-  return <SenhaGerada />
+  return <GeracaoSenha />
 }
 
 export default App
