@@ -1,7 +1,7 @@
-import PainelServidor from "./pages/PainelServidor"
+import VisualizacaoFila from "./pages/VisualizacaoFila"
 
 function App() {
-  return <PainelServidor />
+  return <VisualizacaoFila />
 }
 
 export default App
