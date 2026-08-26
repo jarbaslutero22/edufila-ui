@@ -1,7 +1,7 @@
-import GeracaoSenha from "./pages/GeracaoSenha"
+import HistoricoAtendimentos from "./pages/HistoricoAtendimentos"
 
 function App() {
-  return <GeracaoSenha />
+  return <HistoricoAtendimentos />
 }
 
 export default App
