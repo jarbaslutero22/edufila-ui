@@ -1,7 +1,7 @@
-import AcompanhamentoFila from "./pages/AcompanhamentoFila"
+import PainelServidor from "./pages/PainelServidor"
 
 function App() {
-  return <AcompanhamentoFila />
+  return <PainelServidor />
 }
 
 export default App
