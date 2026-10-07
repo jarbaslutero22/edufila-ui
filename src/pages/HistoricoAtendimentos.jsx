@@ -1,32 +1,110 @@
+import { useEffect, useState } from "react"
 import "../App.css"
+import { apiFetch } from "../services/api"
 
 function HistoricoAtendimentos() {
-  const atendimentos = [
-    {
-      data: "20/08/2026",
-      senha: "A018",
-      setor: "Secretaria Acadêmica",
-      demanda: "Documentação acadêmica",
-      status: "Concluído",
-      horario: "10:32",
-    },
-    {
-      data: "12/08/2026",
-      senha: "C007",
-      setor: "Coordenação do Curso",
-      demanda: "Orientação acadêmica",
-      status: "Concluído",
-      horario: "14:18",
-    },
-    {
-      data: "05/08/2026",
-      senha: "A041",
-      setor: "Atendimento ao Estudante",
-      demanda: "Informações acadêmicas",
-      status: "Concluído",
-      horario: "09:45",
-    },
-  ]
+  const [atendimentos, setAtendimentos] = useState([])
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState("")
+
+  const [setorFiltro, setSetorFiltro] = useState("todos")
+  const [periodoFiltro, setPeriodoFiltro] = useState("todos")
+
+  useEffect(() => {
+    async function carregarHistorico() {
+      try {
+        setCarregando(true)
+        setErro("")
+
+        const dados = await apiFetch("/api/fila/historico/listar")
+
+        setAtendimentos(dados.historico || [])
+      } catch (error) {
+        setErro(
+          error.message ||
+          "Não foi possível carregar o histórico de atendimentos."
+        )
+      } finally {
+        setCarregando(false)
+      }
+    }
+
+    carregarHistorico()
+  }, [])
+
+  function formatarData(dataHora) {
+    if (!dataHora) return "-"
+
+    const data = new Date(dataHora)
+
+    return data.toLocaleDateString("pt-BR")
+  }
+
+  function formatarHorario(dataHora) {
+    if (!dataHora) return "-"
+
+    const data = new Date(dataHora)
+
+    return data.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
+  function obterNomeSetor(setorId) {
+    const setores = {
+      1: "Secretaria Acadêmica",
+      2: "Coordenação do Curso",
+      3: "Atendimento ao Estudante",
+      4: "Setor Administrativo",
+      5: "Biblioteca Central",
+    }
+
+    return setores[setorId] || `Setor ${setorId}`
+  }
+
+  function filtrarPorPeriodo(atendimento) {
+    if (periodoFiltro === "todos") {
+      return true
+    }
+
+    if (!atendimento.horarioFinalizacao) {
+      return false
+    }
+
+    const dataAtendimento = new Date(atendimento.horarioFinalizacao)
+    const agora = new Date()
+
+    if (periodoFiltro === "30") {
+      const limite = new Date()
+      limite.setDate(agora.getDate() - 30)
+
+      return dataAtendimento >= limite
+    }
+
+    if (periodoFiltro === "90") {
+      const limite = new Date()
+      limite.setDate(agora.getDate() - 90)
+
+      return dataAtendimento >= limite
+    }
+
+    if (periodoFiltro === "ano") {
+      return dataAtendimento.getFullYear() === agora.getFullYear()
+    }
+
+    return true
+  }
+
+  const atendimentosFiltrados = atendimentos.filter((atendimento) => {
+    const setorCorresponde =
+      setorFiltro === "todos" ||
+      String(atendimento.setorId) === setorFiltro
+
+    const periodoCorresponde = filtrarPorPeriodo(atendimento)
+
+    return setorCorresponde && periodoCorresponde
+  })
 
   return (
     <main className="dashboard-page">
@@ -66,26 +144,47 @@ function HistoricoAtendimentos() {
 
           <div className="historico-total">
             <span>Total de atendimentos</span>
-            <strong>{atendimentos.length}</strong>
+            <strong>{atendimentosFiltrados.length}</strong>
           </div>
         </div>
+
+        {erro && (
+          <div className="geracao-warning">
+            <div className="notice-icon">!</div>
+
+            <div>
+              <strong>Não foi possível carregar o histórico</strong>
+              <p>{erro}</p>
+            </div>
+          </div>
+        )}
 
         <section className="historico-filtros">
           <div className="field-group">
             <label htmlFor="setor-historico">Setor</label>
 
-            <select id="setor-historico" defaultValue="todos">
+            <select
+              id="setor-historico"
+              value={setorFiltro}
+              onChange={(event) => setSetorFiltro(event.target.value)}
+            >
               <option value="todos">Todos os setores</option>
-              <option value="secretaria">Secretaria Acadêmica</option>
-              <option value="coordenacao">Coordenação do Curso</option>
-              <option value="atendimento">Atendimento ao Estudante</option>
+              <option value="1">Secretaria Acadêmica</option>
+              <option value="2">Coordenação do Curso</option>
+              <option value="3">Atendimento ao Estudante</option>
+              <option value="4">Setor Administrativo</option>
+              <option value="5">Biblioteca Central</option>
             </select>
           </div>
 
           <div className="field-group">
             <label htmlFor="periodo-historico">Período</label>
 
-            <select id="periodo-historico" defaultValue="todos">
+            <select
+              id="periodo-historico"
+              value={periodoFiltro}
+              onChange={(event) => setPeriodoFiltro(event.target.value)}
+            >
               <option value="todos">Todo o período</option>
               <option value="30">Últimos 30 dias</option>
               <option value="90">Últimos 90 dias</option>
@@ -94,36 +193,67 @@ function HistoricoAtendimentos() {
           </div>
         </section>
 
-        <section className="historico-lista">
-          {atendimentos.map((atendimento) => (
-            <article className="historico-card" key={atendimento.senha}>
-              <div className="historico-data">
-                <span>{atendimento.data}</span>
-                <small>{atendimento.horario}</small>
-              </div>
+        {carregando ? (
+          <section className="historico-lista">
+            <div className="historico-info">
+              <div className="notice-icon">...</div>
 
-              <div className="historico-principal">
-                <div>
-                  <span className="historico-label">Setor</span>
-                  <strong>{atendimento.setor}</strong>
+              <p>Carregando histórico de atendimentos...</p>
+            </div>
+          </section>
+        ) : atendimentosFiltrados.length === 0 ? (
+          <section className="historico-lista">
+            <div className="historico-info">
+              <div className="notice-icon">i</div>
+
+              <p>
+                Nenhum atendimento encontrado para os filtros selecionados.
+              </p>
+            </div>
+          </section>
+        ) : (
+          <section className="historico-lista">
+            {atendimentosFiltrados.map((atendimento) => (
+              <article
+                className="historico-card"
+                key={`${atendimento.codigo}-${atendimento.horarioFinalizacao}`}
+              >
+                <div className="historico-data">
+                  <span>
+                    {formatarData(atendimento.horarioFinalizacao)}
+                  </span>
+
+                  <small>
+                    {formatarHorario(atendimento.horarioFinalizacao)}
+                  </small>
                 </div>
 
-                <p>{atendimento.demanda}</p>
-              </div>
+                <div className="historico-principal">
+                  <div>
+                    <span className="historico-label">Setor</span>
 
-              <div className="historico-senha">
-                <span>Senha</span>
-                <strong>{atendimento.senha}</strong>
-              </div>
+                    <strong>
+                      {obterNomeSetor(atendimento.setorId)}
+                    </strong>
+                  </div>
 
-              <div className="historico-status">
-                <span className="status-concluido">
-                  ✓ {atendimento.status}
-                </span>
-              </div>
-            </article>
-          ))}
-        </section>
+                  <p>Atendimento acadêmico</p>
+                </div>
+
+                <div className="historico-senha">
+                  <span>Senha</span>
+                  <strong>{atendimento.codigo}</strong>
+                </div>
+
+                <div className="historico-status">
+                  <span className="status-concluido">
+                    ✓ Concluído
+                  </span>
+                </div>
+              </article>
+            ))}
+          </section>
+        )}
 
         <div className="historico-info">
           <div className="notice-icon">i</div>
