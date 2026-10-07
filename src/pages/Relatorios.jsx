@@ -1,51 +1,188 @@
+import { useEffect, useState } from "react"
 import "../App.css"
+import { apiFetch } from "../services/api"
 
 function Relatorios() {
-  const resumo = [
-    {
-      titulo: "Atendimentos no período",
-      valor: "128",
-      descricao: "Total de atendimentos registrados.",
-    },
-    {
-      titulo: "Tempo médio de espera",
-      valor: "11 min",
-      descricao: "Média estimada no período.",
-    },
-    {
-      titulo: "Setor com mais atendimentos",
-      valor: "Secretaria",
-      descricao: "Setor com maior volume.",
-    },
-    {
-      titulo: "Atendimentos concluídos",
-      valor: "119",
-      descricao: "Atendimentos finalizados.",
-    },
-  ]
+  const [atendimentos, setAtendimentos] = useState([])
+  const [setores, setSetores] = useState([])
 
-  const setores = [
-    {
-      setor: "Secretaria Acadêmica",
-      atendimentos: 52,
-      espera: "10 min",
-    },
-    {
-      setor: "Coordenação do Curso",
-      atendimentos: 31,
-      espera: "8 min",
-    },
-    {
-      setor: "Atendimento ao Estudante",
-      atendimentos: 27,
-      espera: "13 min",
-    },
-    {
-      setor: "Setor Administrativo",
-      atendimentos: 18,
-      espera: "14 min",
-    },
-  ]
+  const [dataInicial, setDataInicial] = useState("")
+  const [dataFinal, setDataFinal] = useState("")
+  const [setorFiltro, setSetorFiltro] = useState("todos")
+
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState("")
+
+  useEffect(() => {
+    async function carregarDados() {
+      try {
+        setCarregando(true)
+        setErro("")
+
+        const [dadosRelatorios, dadosSetores] =
+          await Promise.all([
+            apiFetch("/api/relatorios"),
+            apiFetch("/api/setores"),
+          ])
+
+        setAtendimentos(dadosRelatorios.atendimentos || [])
+        setSetores(dadosSetores.setores || [])
+      } catch (error) {
+        setErro(
+          error.message ||
+            "Não foi possível carregar os dados dos relatórios."
+        )
+      } finally {
+        setCarregando(false)
+      }
+    }
+
+    carregarDados()
+  }, [])
+
+  function obterNomeSetor(setorId) {
+    const setor = setores.find(
+      (item) => Number(item.id) === Number(setorId)
+    )
+
+    return setor?.nome || `Setor ${setorId}`
+  }
+
+  function calcularTempoEspera(atendimento) {
+    if (
+      !atendimento.horarioEntrada ||
+      !atendimento.horarioChamada
+    ) {
+      return 0
+    }
+
+    const entrada = new Date(atendimento.horarioEntrada)
+    const chamada = new Date(atendimento.horarioChamada)
+
+    return (chamada - entrada) / 60000
+  }
+
+  function formatarMinutos(valor) {
+    if (!Number.isFinite(valor)) {
+      return "0 min"
+    }
+
+    return `${Math.round(valor)} min`
+  }
+
+  function estaNoPeriodo(atendimento) {
+    if (!atendimento.horarioEntrada) {
+      return false
+    }
+
+    const data = new Date(atendimento.horarioEntrada)
+
+    if (dataInicial) {
+      const inicio = new Date(`${dataInicial}T00:00:00`)
+
+      if (data < inicio) {
+        return false
+      }
+    }
+
+    if (dataFinal) {
+      const fim = new Date(`${dataFinal}T23:59:59`)
+
+      if (data > fim) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const atendimentosFiltrados = atendimentos.filter(
+    (atendimento) => {
+      const correspondeAoSetor =
+        setorFiltro === "todos" ||
+        String(atendimento.setorId) === setorFiltro
+
+      return (
+        correspondeAoSetor &&
+        estaNoPeriodo(atendimento)
+      )
+    }
+  )
+
+  const totalAtendimentos = atendimentosFiltrados.length
+
+  const atendimentosConcluidos =
+    atendimentosFiltrados.filter(
+      (item) => item.status === "finalizado"
+    ).length
+
+  const atendimentosPrioritarios =
+    atendimentosFiltrados.filter(
+      (item) => item.prioridade === true
+    ).length
+
+  const atendimentosNormais =
+    totalAtendimentos - atendimentosPrioritarios
+
+  const atendimentosCancelados =
+    atendimentosFiltrados.filter(
+      (item) => item.status === "cancelado"
+    ).length
+
+  const temposEspera = atendimentosFiltrados
+    .map(calcularTempoEspera)
+    .filter((tempo) => Number.isFinite(tempo))
+
+  const tempoMedioEspera =
+    temposEspera.length > 0
+      ? temposEspera.reduce(
+          (total, tempo) => total + tempo,
+          0
+        ) / temposEspera.length
+      : 0
+
+  const setoresResumo = setores
+    .map((setor) => {
+      const registros = atendimentosFiltrados.filter(
+        (item) =>
+          Number(item.setorId) === Number(setor.id)
+      )
+
+      const tempos = registros
+        .map(calcularTempoEspera)
+        .filter((tempo) => Number.isFinite(tempo))
+
+      const media =
+        tempos.length > 0
+          ? tempos.reduce(
+              (total, tempo) => total + tempo,
+              0
+            ) / tempos.length
+          : 0
+
+      return {
+        id: setor.id,
+        setor: setor.nome,
+        atendimentos: registros.length,
+        espera: formatarMinutos(media),
+      }
+    })
+    .filter((item) => item.atendimentos > 0)
+    .sort(
+      (a, b) =>
+        b.atendimentos - a.atendimentos
+    )
+
+  const setorComMaisAtendimentos =
+    setoresResumo.length > 0
+      ? setoresResumo[0].setor
+      : "Nenhum"
+
+  function limparFiltros() {
+    setDataInicial("")
+    setDataFinal("")
+    setSetorFiltro("todos")
+  }
 
   return (
     <main className="dashboard-page">
@@ -83,11 +220,25 @@ function Relatorios() {
             <h1>Relatórios de atendimento</h1>
 
             <p>
-              Consulte informações resumidas sobre os atendimentos
-              realizados no EduFila.
+              Consulte informações resumidas sobre os
+              atendimentos realizados no EduFila.
             </p>
           </div>
         </div>
+
+        {erro && (
+          <div className="geracao-warning">
+            <div className="notice-icon">!</div>
+
+            <div>
+              <strong>
+                Não foi possível carregar os relatórios
+              </strong>
+
+              <p>{erro}</p>
+            </div>
+          </div>
+        )}
 
         <section className="reports-filters">
           <div className="field-group">
@@ -98,6 +249,10 @@ function Relatorios() {
             <input
               id="periodo-inicial"
               type="date"
+              value={dataInicial}
+              onChange={(event) =>
+                setDataInicial(event.target.value)
+              }
             />
           </div>
 
@@ -109,6 +264,10 @@ function Relatorios() {
             <input
               id="periodo-final"
               type="date"
+              value={dataFinal}
+              onChange={(event) =>
+                setDataFinal(event.target.value)
+              }
             />
           </div>
 
@@ -119,171 +278,302 @@ function Relatorios() {
 
             <select
               id="relatorio-setor"
-              defaultValue="todos"
+              value={setorFiltro}
+              onChange={(event) =>
+                setSetorFiltro(event.target.value)
+              }
             >
               <option value="todos">
                 Todos os setores
               </option>
 
-              <option value="secretaria">
-                Secretaria Acadêmica
-              </option>
-
-              <option value="coordenacao">
-                Coordenação do Curso
-              </option>
-
-              <option value="atendimento">
-                Atendimento ao Estudante
-              </option>
-
-              <option value="administrativo">
-                Setor Administrativo
-              </option>
+              {setores.map((setor) => (
+                <option
+                  key={setor.id}
+                  value={setor.id}
+                >
+                  {setor.nome}
+                </option>
+              ))}
             </select>
           </div>
 
           <button
             className="dashboard-primary-button"
             type="button"
+            disabled={carregando}
           >
-            Gerar relatório
+            {carregando
+              ? "Carregando..."
+              : "Gerar relatório"}
+          </button>
+
+          <button
+            className="back-button"
+            type="button"
+            onClick={limparFiltros}
+          >
+            Limpar filtros
           </button>
         </section>
 
-        <section className="reports-summary">
-          {resumo.map((item) => (
-            <article
-              className="info-card"
-              key={item.titulo}
-            >
-              <span className="card-label">
-                {item.titulo}
-              </span>
+        {carregando ? (
+          <div className="historico-info">
+            <div className="notice-icon">...</div>
 
-              <strong>{item.valor}</strong>
+            <p>
+              Carregando dados dos relatórios...
+            </p>
+          </div>
+        ) : (
+          <>
+            <section className="reports-summary">
+              <article className="info-card">
+                <span className="card-label">
+                  Atendimentos no período
+                </span>
 
-              <p>{item.descricao}</p>
-            </article>
-          ))}
-        </section>
+                <strong>
+                  {totalAtendimentos}
+                </strong>
 
-        <section className="reports-grid">
-          <article className="reports-panel">
-            <div>
-              <p className="panel-overline">
-                ATENDIMENTOS POR SETOR
-              </p>
+                <p>
+                  Total de atendimentos registrados.
+                </p>
+              </article>
 
-              <h2>Resumo dos setores</h2>
-            </div>
+              <article className="info-card">
+                <span className="card-label">
+                  Tempo médio de espera
+                </span>
 
-            <div className="reports-sector-list">
-              {setores.map((item) => (
-                <div
-                  className="reports-sector-item"
-                  key={item.setor}
-                >
-                  <div>
-                    <strong>{item.setor}</strong>
+                <strong>
+                  {formatarMinutos(
+                    tempoMedioEspera
+                  )}
+                </strong>
 
-                    <span>
-                      {item.atendimentos} atendimentos
-                    </span>
+                <p>
+                  Média calculada pelos horários registrados.
+                </p>
+              </article>
+
+              <article className="info-card">
+                <span className="card-label">
+                  Setor com mais atendimentos
+                </span>
+
+                <strong>
+                  {setorComMaisAtendimentos}
+                </strong>
+
+                <p>
+                  Setor com maior volume no período.
+                </p>
+              </article>
+
+              <article className="info-card">
+                <span className="card-label">
+                  Atendimentos concluídos
+                </span>
+
+                <strong>
+                  {atendimentosConcluidos}
+                </strong>
+
+                <p>
+                  Atendimentos finalizados.
+                </p>
+              </article>
+            </section>
+
+            <section className="reports-grid">
+              <article className="reports-panel">
+                <div>
+                  <p className="panel-overline">
+                    ATENDIMENTOS POR SETOR
+                  </p>
+
+                  <h2>Resumo dos setores</h2>
+                </div>
+
+                {setoresResumo.length === 0 ? (
+                  <div className="historico-info">
+                    <div className="notice-icon">i</div>
+
+                    <p>
+                      Nenhum atendimento encontrado
+                      para os filtros selecionados.
+                    </p>
                   </div>
+                ) : (
+                  <div className="reports-sector-list">
+                    {setoresResumo.map((item) => (
+                      <div
+                        className="reports-sector-item"
+                        key={item.id}
+                      >
+                        <div>
+                          <strong>
+                            {item.setor}
+                          </strong>
 
-                  <div className="reports-sector-metrics">
+                          <span>
+                            {item.atendimentos}{" "}
+                            {item.atendimentos === 1
+                              ? "atendimento"
+                              : "atendimentos"}
+                          </span>
+                        </div>
+
+                        <div className="reports-sector-metrics">
+                          <span>
+                            Tempo médio
+                          </span>
+
+                          <strong>
+                            {item.espera}
+                          </strong>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+
+              <aside className="reports-panel reports-side">
+                <p className="panel-overline">
+                  INDICADORES
+                </p>
+
+                <h2>Resumo do período</h2>
+
+                <div className="reports-indicators">
+                  <div>
                     <span>
-                      Tempo médio
+                      Atendimentos registrados
                     </span>
 
                     <strong>
-                      {item.espera}
+                      {totalAtendimentos}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Concluídos</span>
+
+                    <strong>
+                      {atendimentosConcluidos}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Prioritários</span>
+
+                    <strong>
+                      {atendimentosPrioritarios}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Normais</span>
+
+                    <strong>
+                      {atendimentosNormais}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Cancelados</span>
+
+                    <strong>
+                      {atendimentosCancelados}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      Tempo médio geral
+                    </span>
+
+                    <strong>
+                      {formatarMinutos(
+                        tempoMedioEspera
+                      )}
                     </strong>
                   </div>
                 </div>
-              ))}
-            </div>
-          </article>
+              </aside>
+            </section>
 
-          <aside className="reports-panel reports-side">
-            <p className="panel-overline">
-              INDICADORES
-            </p>
+            <section className="reports-table-card">
+              <div className="reports-table-heading">
+                <div>
+                  <p className="panel-overline">
+                    DETALHAMENTO
+                  </p>
 
-            <h2>Resumo do período</h2>
-
-            <div className="reports-indicators">
-              <div>
-                <span>Atendimentos registrados</span>
-                <strong>128</strong>
+                  <h2>
+                    Atendimentos por setor
+                  </h2>
+                </div>
               </div>
 
-              <div>
-                <span>Concluídos</span>
-                <strong>119</strong>
-              </div>
+              <div className="admin-table-wrapper">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Setor</th>
+                      <th>Atendimentos</th>
+                      <th>
+                        Tempo médio de espera
+                      </th>
+                    </tr>
+                  </thead>
 
-              <div>
-                <span>Cancelados</span>
-                <strong>9</strong>
-              </div>
+                  <tbody>
+                    {setoresResumo.length === 0 ? (
+                      <tr>
+                        <td colSpan="3">
+                          Nenhum atendimento encontrado.
+                        </td>
+                      </tr>
+                    ) : (
+                      setoresResumo.map((item) => (
+                        <tr key={item.id}>
+                          <td>
+                            <strong>
+                              {item.setor}
+                            </strong>
+                          </td>
 
-              <div>
-                <span>Tempo médio geral</span>
-                <strong>11 min</strong>
-              </div>
-            </div>
-          </aside>
-        </section>
+                          <td>
+                            {item.atendimentos}
+                          </td>
 
-        <section className="reports-table-card">
-          <div className="reports-table-heading">
-            <div>
-              <p className="panel-overline">
-                DETALHAMENTO
+                          <td>
+                            {item.espera}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <div className="historico-info">
+              <div className="notice-icon">i</div>
+
+              <p>
+                Os dados apresentados são carregados
+                diretamente da API do EduFila. Os filtros
+                de período e setor são aplicados sobre os
+                atendimentos retornados pelo sistema.
               </p>
-
-              <h2>Atendimentos por setor</h2>
             </div>
-          </div>
-
-          <div className="admin-table-wrapper">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Setor</th>
-                  <th>Atendimentos</th>
-                  <th>Tempo médio de espera</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {setores.map((item) => (
-                  <tr key={item.setor}>
-                    <td>
-                      <strong>{item.setor}</strong>
-                    </td>
-
-                    <td>{item.atendimentos}</td>
-
-                    <td>{item.espera}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <div className="historico-info">
-          <div className="notice-icon">i</div>
-
-          <p>
-            Os relatórios apresentados possuem caráter informativo
-            e resumem dados básicos dos atendimentos registrados
-            no sistema.
-          </p>
-        </div>
+          </>
+        )}
       </section>
     </main>
   )
