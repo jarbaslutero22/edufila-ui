@@ -1,36 +1,82 @@
+import { useEffect, useState } from "react"
 import "../App.css"
+import { apiFetch } from "../services/api"
+
+const descricoesSetores = {
+  "Secretaria Acadêmica":
+    "Documentos, matrícula e informações acadêmicas.",
+
+  "Coordenação do Curso":
+    "Orientações acadêmicas e assuntos relacionados ao curso.",
+
+  "Atendimento ao Estudante":
+    "Dúvidas gerais e suporte aos serviços acadêmicos.",
+
+  "Setor Administrativo":
+    "Solicitações e orientações administrativas.",
+}
 
 function EscolhaSetor() {
-  const setores = [
-    {
-      nome: "Secretaria Acadêmica",
-      descricao: "Documentos, matrícula e informações acadêmicas.",
-      fila: 4,
-      espera: "≈ 12 min",
-      disponivel: true,
-    },
-    {
-      nome: "Coordenação do Curso",
-      descricao: "Orientações acadêmicas e assuntos relacionados ao curso.",
-      fila: 2,
-      espera: "≈ 8 min",
-      disponivel: true,
-    },
-    {
-      nome: "Atendimento ao Estudante",
-      descricao: "Dúvidas gerais e suporte aos serviços acadêmicos.",
-      fila: 6,
-      espera: "≈ 18 min",
-      disponivel: true,
-    },
-    {
-      nome: "Setor Administrativo",
-      descricao: "Solicitações e orientações administrativas.",
-      fila: 0,
-      espera: "Indisponível",
-      disponivel: false,
-    },
-  ]
+  const [setores, setSetores] = useState([])
+  const [fila, setFila] = useState([])
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState("")
+
+  useEffect(() => {
+    async function carregarDados() {
+      try {
+        setCarregando(true)
+        setErro("")
+
+        const [dadosSetores, dadosFila] = await Promise.all([
+          apiFetch("/api/setores"),
+          apiFetch("/api/fila"),
+        ])
+
+        const listaSetores = Array.isArray(dadosSetores)
+          ? dadosSetores
+          : dadosSetores.setores || []
+
+        setSetores(listaSetores)
+        setFila(dadosFila.fila || [])
+      } catch (error) {
+        setErro(
+          error.message || "Não foi possível carregar os setores."
+        )
+      } finally {
+        setCarregando(false)
+      }
+    }
+
+    carregarDados()
+  }, [])
+
+  function obterQuantidadeNaFila(setorId) {
+    return fila.filter(
+      (item) =>
+        item.setorId === setorId &&
+        item.status === "aguardando"
+    ).length
+  }
+
+  function obterEspera(setorId) {
+    const quantidade = obterQuantidadeNaFila(setorId)
+
+    if (quantidade === 0) {
+      return "Sem espera"
+    }
+
+    const minutos = quantidade * 4
+
+    return `≈ ${minutos} min`
+  }
+
+  function obterDescricao(nome) {
+    return (
+      descricoesSetores[nome] ||
+      "Atendimento e suporte aos serviços acadêmicos."
+    )
+  }
 
   return (
     <main className="dashboard-page">
@@ -60,7 +106,9 @@ function EscolhaSetor() {
             ← Voltar
           </button>
 
-          <p className="eyebrow-dashboard">SOLICITAR ATENDIMENTO</p>
+          <p className="eyebrow-dashboard">
+            SOLICITAR ATENDIMENTO
+          </p>
 
           <h1>Escolha o setor</h1>
 
@@ -69,68 +117,131 @@ function EscolhaSetor() {
           </p>
         </div>
 
-        <section className="setores-grid">
-          {setores.map((setor) => (
-            <article
-              key={setor.nome}
-              className={`setor-card ${
-                !setor.disponivel ? "setor-disabled" : ""
-              }`}
-            >
-              <div className="setor-card-top">
-                <div className="setor-icon">▦</div>
+        {carregando && (
+          <div className="setor-notice">
+            <div className="notice-icon">...</div>
 
-                <span
-                  className={
-                    setor.disponivel
-                      ? "availability-badge available"
-                      : "availability-badge unavailable"
-                  }
-                >
-                  {setor.disponivel ? "Disponível" : "Indisponível"}
-                </span>
-              </div>
+            <div>
+              <strong>Carregando setores</strong>
 
-              <h2>{setor.nome}</h2>
-              <p>{setor.descricao}</p>
-
-              <div className="setor-info">
-                <div>
-                  <span>Pessoas na fila</span>
-                  <strong>{setor.disponivel ? setor.fila : "—"}</strong>
-                </div>
-
-                <div>
-                  <span>Espera estimada</span>
-                  <strong>{setor.espera}</strong>
-                </div>
-              </div>
-
-              <button
-                className="setor-button"
-                type="button"
-                disabled={!setor.disponivel}
-              >
-                {setor.disponivel
-                  ? "Selecionar setor"
-                  : "Atendimento indisponível"}
-              </button>
-            </article>
-          ))}
-        </section>
-
-        <div className="setor-notice">
-          <div className="notice-icon">i</div>
-
-          <div>
-            <strong>Como funciona?</strong>
-            <p>
-              Após escolher o setor, você poderá informar o tipo de demanda e
-              confirmar a solicitação. O EduFila gerará automaticamente sua
-              senha virtual e sua posição na fila.
-            </p>
+              <p>
+                Consultando os setores disponíveis no EduFila.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
+
+        {erro && (
+          <div className="setor-notice">
+            <div className="notice-icon">!</div>
+
+            <div>
+              <strong>Não foi possível carregar os setores</strong>
+
+              <p>{erro}</p>
+            </div>
+          </div>
+        )}
+
+        {!carregando && !erro && (
+          <>
+            <section className="setores-grid">
+              {setores.length === 0 && (
+                <div className="setor-notice">
+                  <div className="notice-icon">!</div>
+
+                  <div>
+                    <strong>Nenhum setor cadastrado</strong>
+
+                    <p>
+                      Não existem setores disponíveis para atendimento.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {setores.map((setor) => {
+                const quantidadeFila =
+                  obterQuantidadeNaFila(setor.id)
+
+                const espera = obterEspera(setor.id)
+
+                return (
+                  <article
+                    key={setor.id}
+                    className="setor-card"
+                  >
+                    <div className="setor-card-top">
+                      <div className="setor-icon">▦</div>
+
+                      <span className="availability-badge available">
+                        Disponível
+                      </span>
+                    </div>
+
+                    <h2>{setor.nome}</h2>
+
+                    <p>
+                      {obterDescricao(setor.nome)}
+                    </p>
+
+                    <div className="setor-info">
+                      <div>
+                        <span>Pessoas na fila</span>
+
+                        <strong>
+                          {quantidadeFila}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Espera estimada</span>
+
+                        <strong>
+                          {espera}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <button
+                      className="setor-button"
+                      type="button"
+                    >
+                      Selecionar setor
+                    </button>
+                  </article>
+                )
+              })}
+            </section>
+
+            <div className="setor-notice">
+              <div className="notice-icon">i</div>
+
+              <div>
+                <strong>Como funciona?</strong>
+
+                <p>
+                  Após escolher o setor, você poderá informar o tipo de
+                  demanda e confirmar a solicitação. O EduFila gerará
+                  automaticamente sua senha virtual e sua posição na fila.
+                </p>
+              </div>
+            </div>
+
+            <div className="setor-notice">
+              <div className="notice-icon">✓</div>
+
+              <div>
+                <strong>API integrada com sucesso</strong>
+
+                <p>
+                  Os setores e a quantidade de pessoas na fila estão sendo
+                  carregados diretamente da API do EduFila.
+                </p>
+              </div>
+            </div>
+          </>
+        )}
       </section>
     </main>
   )
